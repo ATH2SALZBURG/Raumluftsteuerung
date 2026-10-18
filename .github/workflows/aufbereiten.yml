@@ -1,0 +1,71 @@
+name: Raumluft aufbereiten
+
+# Laeuft, sobald das Geraet ein neues Rohpaket abgelegt hat.
+on:
+  push:
+    paths:
+      - 'roh/**'
+  workflow_dispatch:          # von Hand ausloesbar
+
+# Zwei gleichzeitige Laeufe wuerden sich beim Schreiben der Tagesdateien in
+# die Quere kommen. Nicht abbrechen, sondern anstellen -- ein abgebrochener
+# Lauf liesse Rohpakete liegen.
+concurrency:
+  group: raumluft
+  cancel-in-progress: false
+
+permissions:
+  contents: write             # Tagesdateien zurueckschreiben
+  pages: write                # Dashboard veroeffentlichen
+  id-token: write
+
+jobs:
+  aufbereiten:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Formeln pruefen
+        # Laeuft in zwei Sekunden und verhindert, dass eine kaputte Formel
+        # stillschweigend ein Archiv voll falscher Zahlen erzeugt.
+        run: python werkzeuge/test_luft.py
+
+      - name: Rohpakete einarbeiten
+        run: python werkzeuge/aufbereiten.py
+
+      - name: Ergebnis zurueckschreiben
+        # dashboard.json wird NICHT eingecheckt: Die Datei entsteht bei
+        # jedem Lauf neu und waere mit 96 Fassungen am Tag der groesste
+        # Posten der Versionsgeschichte. Fuer die Veroeffentlichung liegt
+        # sie trotzdem im Arbeitsverzeichnis.
+        #
+        # "[skip ci]" verhindert, dass dieser Commit den Workflow erneut
+        # ausloest -- er loescht Dateien unter roh/, und genau darauf
+        # horcht der Ausloeser.
+        run: |
+          git config user.name  "Raumluft"
+          git config user.email "raumluft@users.noreply.github.com"
+          git add -A tage naechte.json roh
+          if git diff --cached --quiet; then
+            echo "Nichts zurueckzuschreiben."
+          else
+            git commit -m "Messdaten eingearbeitet [skip ci]"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - id: pages
+        uses: actions/deploy-pages@v4
