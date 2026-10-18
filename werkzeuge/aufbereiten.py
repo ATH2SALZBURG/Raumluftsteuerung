@@ -7,18 +7,15 @@ Ablauf:
     1. roh/*.csv einlesen
     2. in tage/JJJJ-MM-TT.csv einsortieren, Dubletten ueberschreiben
     3. verarbeitete Rohdateien loeschen
-    4. betroffene NAECHTE neu auswerten (naechte.json)
+    4. betroffene Tage neu auswerten (tage.json)
     5. dashboard.json schreiben
 
-Die Rechengroesse ist die NACHT, nicht der Kalendertag. Eine Nacht laeuft
-ueber Mitternacht -- im Schlafzimmer ist das der ganze Punkt. Eine Nacht
-traegt das Datum ihres MORGENS: Die Nacht "2026-10-18" reicht vom 17.10.
-22:00 bis zum 18.10. 07:00. So heisst sie auch im Gespraech ("die Nacht
-auf den 18.").
+Gemessen und bewertet wird ueber den ganzen Tag. Es gibt keine
+Sonderbehandlung einzelner Tageszeiten.
 
-Das Archiv unter tage/ enthaelt nur GEMESSENE Werte. Absolute Feuchte und
-Taupunkt werden hier gerechnet und wandern nur in dashboard.json -- siehe
-die Begruendung in luft.py.
+Das Archiv unter tage/ enthaelt nur GEMESSENE Werte. Die absolute Feuchte
+wird hier gerechnet und wandert nur in dashboard.json -- siehe die
+Begruendung in luft.py.
 """
 
 from __future__ import annotations
@@ -28,7 +25,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from luft import ableiten
+from luft import absolute_feuchte
 
 # Das Geraet schreibt oesterreichische Ortszeit, die GitHub-Action laeuft in
 # UTC. Ohne Umrechnung waeren alle Zeitfenster um zwei Stunden verschoben.
@@ -41,7 +38,7 @@ except Exception as _grund:
     # Mitteleuropa also dasselbe Ergebnis.
     #
     # Der Hinweis muss trotzdem sein: Es ist eine Annahme, und auf einem
-    # Rechner in einer anderen Zeitzone waeren alle Nachtfenster verschoben,
+    # Rechner in einer anderen Zeitzone waeren alle Tagesgrenzen verschoben,
     # ohne dass irgendetwas kaputt aussieht.
     ZONE = None
     print("HINWEIS: Zeitzone Europe/Vienna nicht ladbar (%s)." % _grund)
@@ -63,7 +60,7 @@ def jetzt():
 WURZEL = Path(__file__).resolve().parent.parent
 ROH = WURZEL / "roh"
 TAGE = WURZEL / "tage"
-NAECHTE_JSON = WURZEL / "naechte.json"
+TAGE_JSON = WURZEL / "tage.json"
 DASHBOARD_JSON = WURZEL / "dashboard.json"
 
 SPALTEN = ["zeit", "status", "co2", "t", "rh"]
@@ -77,8 +74,8 @@ SPALTEN = ["zeit", "status", "co2", "t", "rh"]
 # da hier nach Zeitstempel abgelegt wird, wuerde die zweite Stunde die erste
 # ueberschreiben: 60 Minuten still falscher Werte, einmal im Jahr.
 #
-# Die Stellen 0 bis 18 bleiben unveraendert, Datum und Stunde lassen sich
-# also weiterhin durch Abschneiden gewinnen.
+# Die Stellen 0 bis 18 bleiben unveraendert, das Datum laesst sich also
+# weiterhin durch Abschneiden gewinnen.
 ZEITFORM = "%Y-%m-%d %H:%M:%S%z"
 
 # Nur fuer die Anzeige, ohne Versatz.
@@ -94,26 +91,39 @@ def augenblick(zeitstempel):
     """
     return datetime.strptime(zeitstempel, ZEITFORM)
 
-# Nachtfenster: 22:00 bis 07:00.
-NACHT_VON = 22
-NACHT_BIS = 7
 
-# CO2-Schwellen in ppm.
+# ------------------------------------------------------------ Bewertung ----
 #
-# 1000 ppm ist der Pettenkofer-Wert, seit 1858 die gaengige Grenze fuer
-# "hygienisch einwandfreie" Raumluft. Ab rund 1400 ppm gilt sie allgemein
-# als nicht mehr akzeptabel. Frischluft liegt heute bei etwa 420 ppm.
-SCHWELLE_GELB = 1000
-SCHWELLE_ROT = 1400
+# CO2-Schwellen nach der dreistufigen hygienischen Bewertung des
+# Umweltbundesamts (Ad-hoc-Arbeitsgruppe Innenraumrichtwerte 2008,
+# fortgefuehrt in "Hygienische Leitwerte fuer die Innenraumluft"):
+#
+#     unter 1000 ppm   hygienisch unbedenklich
+#     1000 bis 2000    hygienisch auffaellig  -> lueften
+#     ueber 2000 ppm   hygienisch inakzeptabel -> lueften, Raum pruefen
+#
+# Frischluft im Freien liegt derzeit bei rund 420 ppm.
+CO2_GELB = 1000
+CO2_ROT = 2000
+
+# Relative Feuchte: 40 bis 60 % gelten als Wohlfuehlbereich. Dauerhaft ueber
+# 60 % beguenstigt Schimmelwachstum, unter 30 % wird die Luft unangenehm
+# trocken. Das sind Komfort- und Bauschutzwerte, keine Gesundheitsgrenzen --
+# deshalb hier bewusst grosszuegiger gestuft als beim CO2.
+RH_GUT_VON, RH_GUT_BIS = 40.0, 60.0
+RH_ROT_VON, RH_ROT_BIS = 30.0, 70.0
+
+# Temperatur: Komfortbereich, ebenfalls keine Gesundheitsgrenze.
+T_GUT_VON, T_GUT_BIS = 20.0, 24.0
+T_ROT_VON, T_ROT_BIS = 18.0, 26.0
 
 # Verlaufskurven: Name -> (Stunden zurueck, Raster in Minuten)
 #
-# Die volle Minutenaufloesung gibt es nur fuer die letzte Nacht -- das ist
-# die Ansicht, in der man Einzelminuten wirklich ansieht. Der Tagesueberblick
-# im 5-Minuten-Raster sieht praktisch gleich aus, spart aber rund 100 KB,
-# die sonst bei JEDEM Seitenaufruf uebertragen wuerden.
+# Die volle Minutenaufloesung gibt es fuer den laufenden Tag. Darueber
+# hinaus wird gemittelt -- sonst waere dashboard.json nach einem Jahr
+# unbrauchbar gross, und sie wird bei JEDEM Seitenaufruf uebertragen.
 VERLAEUFE = {
-    "tag": (24, 5),
+    "tag": (24, 1),
     "woche": (24 * 7, 15),
     "monat": (24 * 30, 60),
 }
@@ -221,17 +231,19 @@ def in_tagesdateien(saetze):
 # ------------------------------------------------------------- Messpunkte ---
 
 def punkt(satz):
-    """Ein Satz mit gerechneter absoluter Feuchte und Taupunkt."""
+    """Ein Satz mit gerechneter absoluter Feuchte."""
     brauchbar = satz["status"] in STATUS_VERWERTBAR
     co2 = zahl(satz["co2"]) if brauchbar else None
     t = zahl(satz["t"]) if brauchbar else None
     rh = zahl(satz["rh"]) if brauchbar else None
-    ah, td = ableiten(t, rh)
-    return {"z": satz["zeit"], "c": co2, "t": t, "rh": rh,
-            "ah": ah, "td": td, "s": satz["status"]}
+    ah = None
+    if t is not None and rh is not None:
+        ah = round(absolute_feuchte(t, rh), 2)
+    return {"z": satz["zeit"], "c": co2, "t": t, "rh": rh, "ah": ah,
+            "s": satz["status"]}
 
 
-FELDER = ("c", "t", "rh", "ah", "td")
+FELDER = ("c", "t", "rh", "ah")
 
 
 def mittel(werte):
@@ -284,37 +296,16 @@ def punkte_ab(stunden_zurueck):
     return punkte
 
 
-# ----------------------------------------------------------------- Naechte ---
+# ------------------------------------------------------------ Tageswerte ----
 
-def ist_nachtstunde(stunde):
-    return stunde >= NACHT_VON or stunde < NACHT_BIS
-
-
-def naechte_eines_tages(tag):
-    """Welche Naechte koennen Daten dieses Tages enthalten?
-
-    Der Abend (ab 22:00) gehoert zur Nacht auf den FOLGETAG, der fruehe
-    Morgen (bis 07:00) zur Nacht auf diesen Tag.
-    """
-    d = datetime.strptime(tag, "%Y-%m-%d")
-    return {tag, (d + timedelta(days=1)).strftime("%Y-%m-%d")}
-
-
-def nacht_saetze(nacht):
-    """Alle Saetze einer Nacht, ueber Mitternacht hinweg zusammengesucht."""
-    d = datetime.strptime(nacht, "%Y-%m-%d")
-    vorabend = (d - timedelta(days=1)).strftime("%Y-%m-%d")
-    saetze = [s for s in tag_lesen(vorabend)
-              if int(s["zeit"][11:13]) >= NACHT_VON]
-    saetze += [s for s in tag_lesen(nacht)
-               if int(s["zeit"][11:13]) < NACHT_BIS]
-    saetze.sort(key=lambda s: augenblick(s["zeit"]))
-    return saetze
-
-
-def nacht_auswerten(nacht):
-    punkte = [punkt(s) for s in nacht_saetze(nacht)]
+def tag_auswerten(tag):
+    """Kennzahlen eines Kalendertags."""
+    punkte = [punkt(s) for s in tag_lesen(tag)]
+    if not punkte:
+        return None
     co2 = [p["c"] for p in punkte if p["c"] is not None]
+    temperaturen = [p["t"] for p in punkte if p["t"] is not None]
+    feuchten = [p["rh"] for p in punkte if p["rh"] is not None]
     if not co2:
         return None
 
@@ -322,57 +313,56 @@ def nacht_auswerten(nacht):
     # Schwelle" ist damit schlicht ein Abzaehlen. Fehlt eine Minute, zaehlt
     # sie nicht mit; das ist richtig, gemessen wurde da nichts.
     return {
-        "nacht": nacht,
+        "tag": tag,
         "minuten": len(punkte),
         "messwerte": len(co2),
         "co2_mittel": round(sum(co2) / len(co2)),
         "co2_max": round(max(co2)),
-        "co2_anfang": round(co2[0]),
-        "co2_ende": round(co2[-1]),
-        # Wie viel sich ueber die Nacht angesammelt hat. Der aussagekraef-
-        # tigste Einzelwert: Er haengt an Belegung und Luftwechsel, nicht am
-        # Ausgangsniveau.
-        "anstieg": round(max(co2) - co2[0]),
-        "min_ueber_gelb": sum(1 for w in co2 if w > SCHWELLE_GELB),
-        "min_ueber_rot": sum(1 for w in co2 if w > SCHWELLE_ROT),
-        "t_mittel": mittel([p["t"] for p in punkte]),
-        "t_min": min((p["t"] for p in punkte if p["t"] is not None),
-                     default=None),
-        "rh_mittel": mittel([p["rh"] for p in punkte]),
+        "co2_min": round(min(co2)),
+        "min_ueber_gelb": sum(1 for w in co2 if w > CO2_GELB),
+        "min_ueber_rot": sum(1 for w in co2 if w > CO2_ROT),
+        "t_mittel": mittel(temperaturen),
+        "t_min": min(temperaturen) if temperaturen else None,
+        "t_max": max(temperaturen) if temperaturen else None,
+        "rh_mittel": mittel(feuchten),
+        "rh_min": min(feuchten) if feuchten else None,
+        "rh_max": max(feuchten) if feuchten else None,
         "ah_mittel": mittel([p["ah"] for p in punkte]),
-        "td_max": max((p["td"] for p in punkte if p["td"] is not None),
-                      default=None),
         "luecken": sum(1 for p in punkte if p["s"] not in STATUS_VERWERTBAR),
     }
 
 
-def naechte_fortschreiben(geaenderte_tage):
-    """Nur die betroffenen Naechte neu rechnen, der Rest bleibt stehen."""
+def tage_fortschreiben(geaenderte_tage):
+    """Tageswerte laden, geaenderte Tage neu rechnen, zurueckschreiben.
+
+    Neu gerechnet wird nur, was sich geaendert hat. Sonst muesste die Action
+    mit wachsender Historie jedes Mal laenger rechnen -- bei 96 Laeufen am
+    Tag faellt das nach einem Jahr ins Gewicht.
+    """
     try:
-        bestand = json.loads(NAECHTE_JSON.read_text(encoding="utf-8"))
+        bestand = json.loads(TAGE_JSON.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         bestand = {}
 
-    # Neu gerechnet wird nur, was sich geaendert hat. Sonst muesste die
-    # Action mit wachsender Historie jedes Mal laenger rechnen -- bei 96
-    # Laeufen am Tag faellt das nach einem Jahr ins Gewicht.
-    betroffen = set()
-    for tag in geaenderte_tage:
-        betroffen |= naechte_eines_tages(tag)
-
+    betroffen = set(geaenderte_tage)
     # Dazu alles, was noch nie gerechnet wurde. So faellt auch ein
     # nachtraeglich von Hand eingespielter Tag nicht durch.
-    for tag in vorhandene_tage():
-        betroffen |= {n for n in naechte_eines_tages(tag) if n not in bestand}
+    betroffen |= {t for t in vorhandene_tage() if t not in bestand}
 
-    for nacht in sorted(betroffen):
-        ergebnis = nacht_auswerten(nacht)
+    for tag in sorted(betroffen):
+        ergebnis = tag_auswerten(tag)
         if ergebnis:
-            bestand[nacht] = ergebnis
-        elif nacht in bestand:
-            del bestand[nacht]
+            bestand[tag] = ergebnis
+        elif tag in bestand:
+            del bestand[tag]
 
-    NAECHTE_JSON.write_text(
+    # Tage, deren Datei verschwunden ist, fliegen raus.
+    vorhanden = set(vorhandene_tage())
+    for tag in list(bestand):
+        if tag not in vorhanden:
+            del bestand[tag]
+
+    TAGE_JSON.write_text(
         json.dumps(bestand, ensure_ascii=False, separators=(",", ":"),
                    sort_keys=True), encoding="utf-8")
     return bestand
@@ -380,22 +370,10 @@ def naechte_fortschreiben(geaenderte_tage):
 
 # --------------------------------------------------------------- Dashboard ---
 
-def letzte_nacht(naechte):
-    """Die juengste ausgewertete Nacht."""
-    return sorted(naechte)[-1] if naechte else None
-
-
-def nacht_verlauf(nacht):
-    return [punkt(s) for s in nacht_saetze(nacht)] if nacht else []
-
-
-def dashboard_bauen(naechte):
+def dashboard_bauen(tageswerte):
     verlauf = {}
     for name, (stunden, raster) in VERLAEUFE.items():
         verlauf[name] = rastern(punkte_ab(stunden), raster)
-
-    nacht = letzte_nacht(naechte)
-    verlauf["nacht"] = nacht_verlauf(nacht)
 
     letzter = None
     for p in reversed(verlauf["tag"]):
@@ -403,21 +381,28 @@ def dashboard_bauen(naechte):
             letzter = p
             break
 
-    reihe = [naechte[n] for n in sorted(naechte)]
+    reihe = [tageswerte[t] for t in sorted(tageswerte)]
     daten = {
         "erzeugt": jetzt().strftime(ANZEIGEFORM),
-        "schwellen": {"gelb": SCHWELLE_GELB, "rot": SCHWELLE_ROT},
-        "nachtfenster": {"von": NACHT_VON, "bis": NACHT_BIS},
+        "schwellen": {
+            "co2_gelb": CO2_GELB,
+            "co2_rot": CO2_ROT,
+            "rh_gut": [RH_GUT_VON, RH_GUT_BIS],
+            "rh_rot": [RH_ROT_VON, RH_ROT_BIS],
+            "t_gut": [T_GUT_VON, T_GUT_BIS],
+            "t_rot": [T_ROT_VON, T_ROT_BIS],
+        },
         "jetzt": letzter,
-        "letzte_nacht": naechte.get(nacht) if nacht else None,
+        "heute": reihe[-1] if reihe else None,
         "verlauf": verlauf,
-        "naechte": reihe,
-        "tage": vorhandene_tage(),
+        "tage": reihe,
+        "dateien": vorhandene_tage(),
         "summe": {
-            "naechte": len(reihe),
-            "erste_nacht": sorted(naechte)[0] if naechte else None,
-            "min_ueber_gelb": sum(n["min_ueber_gelb"] for n in reihe),
-            "min_ueber_rot": sum(n["min_ueber_rot"] for n in reihe),
+            "tage": len(reihe),
+            "erster_tag": sorted(tageswerte)[0] if tageswerte else None,
+            "minuten": sum(t["minuten"] for t in reihe),
+            "min_ueber_gelb": sum(t["min_ueber_gelb"] for t in reihe),
+            "min_ueber_rot": sum(t["min_ueber_rot"] for t in reihe),
         },
     }
     DASHBOARD_JSON.write_text(
@@ -448,15 +433,14 @@ def hauptprogramm():
         pfad.unlink()
     (ROH / ".gitkeep").write_text("", encoding="utf-8")
 
-    naechte = naechte_fortschreiben(geaendert)
-    print("Naechte ausgewertet: %d" % len(naechte))
+    tageswerte = tage_fortschreiben(geaendert)
+    print("Tage ausgewertet: %d" % len(tageswerte))
 
-    daten = dashboard_bauen(naechte)
+    daten = dashboard_bauen(tageswerte)
     groesse = DASHBOARD_JSON.stat().st_size // 1024
-    print("dashboard.json: Nacht %d, Tag %d, Woche %d, Monat %d Punkte, %d KB"
-          % (len(daten["verlauf"]["nacht"]), len(daten["verlauf"]["tag"]),
-             len(daten["verlauf"]["woche"]), len(daten["verlauf"]["monat"]),
-             groesse))
+    print("dashboard.json: Tag %d, Woche %d, Monat %d Punkte, %d KB"
+          % (len(daten["verlauf"]["tag"]), len(daten["verlauf"]["woche"]),
+             len(daten["verlauf"]["monat"]), groesse))
 
 
 if __name__ == "__main__":
