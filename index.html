@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Raumluft Schlafzimmer</title>
+<title>Raumluft</title>
 <style>
   :root {
     color-scheme: light;
@@ -16,13 +16,12 @@
     --kante: rgba(23,23,28,0.09);
     --co2: #5b4bdb;
     --temp: #d9682f;
-    --taupunkt: #0d8f84;
     --rh: #2e7fd4;
     --ah: #a06a10;
     --gut: #15a349;
-    --mittel: #e0a806;
+    --mittel: #e8930c;
     --schlecht: #d33a3a;
-    --nachtflaeche: rgba(91,75,219,0.07);
+    --nadel: #17171c;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -36,13 +35,12 @@
       --kante: rgba(245,245,247,0.10);
       --co2: #8f7dff;
       --temp: #e8894f;
-      --taupunkt: #22b3a6;
       --rh: #5a9ee6;
       --ah: #d4a33a;
       --gut: #2dbf63;
-      --mittel: #f0bd2a;
+      --mittel: #f0a62a;
       --schlecht: #ef5a5a;
-      --nachtflaeche: rgba(143,125,255,0.14);
+      --nadel: #f5f5f7;
     }
   }
   :root[data-theme="dark"] {
@@ -56,13 +54,12 @@
     --kante: rgba(245,245,247,0.10);
     --co2: #8f7dff;
     --temp: #e8894f;
-    --taupunkt: #22b3a6;
     --rh: #5a9ee6;
     --ah: #d4a33a;
     --gut: #2dbf63;
-    --mittel: #f0bd2a;
+    --mittel: #f0a62a;
     --schlecht: #ef5a5a;
-    --nachtflaeche: rgba(143,125,255,0.14);
+    --nadel: #f5f5f7;
   }
 
   * { box-sizing: border-box; }
@@ -83,21 +80,27 @@
   .leise { color: var(--schrift-leise); font-size: 0.85rem; }
   header .leise { margin: 0 0 20px; }
 
-  .meldung {
-    display: flex; align-items: center; gap: 11px;
+  .tafel {
     background: var(--flaeche);
     border: 1px solid var(--kante);
-    border-left-width: 4px;
     border-radius: 12px;
-    padding: 13px 16px;
-    margin-bottom: 18px;
-    font-weight: 500;
+    padding: 16px;
+    margin-bottom: 14px;
   }
-  .ampel { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+  /* ---- Tacho ---- */
+  .tacho { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; }
+  .tacho .bild { flex: 1 1 300px; min-width: 260px; max-width: 420px; }
+  .tacho svg { display: block; width: 100%; height: auto; }
+  .tacho .deutung { flex: 1 1 240px; }
+  .tacho .stufe { font-size: 1.15rem; font-weight: 650; margin-bottom: 2px; }
+  .tacho .rat { color: var(--schrift-leise); font-size: 0.88rem; }
+  .tacho .quelle { color: var(--schrift-leise); font-size: 0.76rem; margin-top: 10px; }
+  .tacho .quelle a { color: inherit; }
 
   .kacheln {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 10px;
     margin-bottom: 24px;
   }
@@ -106,6 +109,7 @@
     border: 1px solid var(--kante);
     border-radius: 12px;
     padding: 12px 14px;
+    border-left: 4px solid var(--achse);
   }
   .kachel .titel { font-size: 0.72rem; color: var(--schrift-leise); text-transform: uppercase; letter-spacing: 0.05em; }
   .kachel .wert { font-size: 1.5rem; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.25; }
@@ -126,28 +130,20 @@
     background: var(--co2); border-color: var(--co2); color: #fff; font-weight: 600;
   }
 
-  .tafel {
-    background: var(--flaeche);
-    border: 1px solid var(--kante);
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 14px;
-  }
   .ablesung { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.82rem; color: var(--schrift-leise); margin: 6px 0 8px; min-height: 1.5em; }
   .ablesung span.p { display: flex; align-items: center; gap: 6px; }
   .wisch { display: inline-block; width: 15px; height: 3px; border-radius: 2px; flex: none; }
   .ablesung b { font-variant-numeric: tabular-nums; color: var(--schrift); font-weight: 650; }
   .bild svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
   .erklaerung { margin: 12px 0 0; font-size: 0.82rem; color: var(--schrift-leise); }
-  .erklaerung + .erklaerung { margin-top: 6px; }
 
   table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
   th, td { text-align: right; padding: 7px 6px; border-bottom: 1px solid var(--linie); font-variant-numeric: tabular-nums; }
   th { color: var(--schrift-leise); font-weight: 500; }
   th:first-child, td:first-child { text-align: left; }
   tbody tr:last-child td { border-bottom: none; }
-  .balkenfeld { width: 34%; }
-  .bahn { display: block; height: 15px; background: var(--linie); border-radius: 4px; overflow: hidden; display: flex; }
+  .balkenfeld { width: 26%; }
+  .bahn { height: 15px; background: var(--linie); border-radius: 4px; overflow: hidden; display: flex; }
   .bahn i { display: block; height: 100%; }
   .rollbar { overflow-x: auto; }
 
@@ -157,8 +153,8 @@
 
   @media (max-width: 560px) {
     .kachel .wert { font-size: 1.28rem; }
-    .balkenfeld { width: 26%; }
     th, td { padding: 6px 4px; }
+    .balkenfeld { width: 20%; }
   }
 </style>
 </head>
@@ -166,13 +162,26 @@
 <div class="mitte">
 
 <header>
-  <h1>Raumluft — Schlafzimmer</h1>
+  <h1>Raumluft</h1>
   <p class="leise" id="kopf">lädt …</p>
 </header>
 
-<div class="meldung" id="meldung" style="border-left-color:var(--achse)">
-  <span class="ampel" style="background:var(--achse)"></span><span>lädt …</span>
-</div>
+<section class="tafel">
+  <div class="tacho">
+    <div class="bild" id="tacho"></div>
+    <div class="deutung">
+      <div class="stufe" id="tacho-stufe">lädt …</div>
+      <div class="rat" id="tacho-rat"></div>
+      <div class="quelle">
+        Bewertung nach der dreistufigen hygienischen Einstufung des
+        Umweltbundesamts (Ad-hoc-Arbeitsgruppe Innenraumrichtwerte 2008,
+        fortgeführt in <a href="https://www.umweltbundesamt.de/system/files/medien/4031/bilder/dateien/hygienische_leitwerte_0.pdf">Hygienische
+        Leitwerte für die Innenraumluft</a>). Frischluft im Freien liegt bei
+        rund 420 ppm.
+      </div>
+    </div>
+  </div>
+</section>
 
 <section class="kacheln" id="kacheln"></section>
 
@@ -180,20 +189,15 @@
 
 <section class="tafel">
   <h2>CO₂</h2>
-  <p class="leise" id="co2-unter"></p>
   <div class="ablesung" id="ab-co2"></div>
   <div class="bild" id="bild-co2"></div>
   <p class="erklaerung" id="co2-erklaerung"></p>
 </section>
 
 <section class="tafel">
-  <h2>Temperatur und Taupunkt</h2>
+  <h2>Temperatur</h2>
   <div class="ablesung" id="ab-temp"></div>
   <div class="bild" id="bild-temp"></div>
-  <p class="erklaerung">Der <strong>Taupunkt</strong> ist die Temperatur, ab
-    der die Luft an einer Fläche Wasser abgibt. Ist eine Wand kälter —
-    Außenecke, hinter dem Schrank, Fensterlaibung — schlägt sich dort Wasser
-    nieder. Das ist der übliche Weg zu Schimmel im Schlafzimmer.</p>
 </section>
 
 <section class="tafel">
@@ -204,19 +208,16 @@
   <div class="bild" id="bild-ah"></div>
   <p class="erklaerung">Zwei Diagramme, weil Prozent und g/m³ verschiedene
     Größenordnungen haben — auf einer gemeinsamen Achse läge die untere Kurve
-    platt am Boden.</p>
-  <p class="erklaerung">Die <strong>absolute</strong> Feuchte sagt, wie viel
+    platt am Boden. Die <strong>absolute</strong> Feuchte sagt, wie viel
     Wasser wirklich in der Luft ist, unabhängig von der Temperatur. Beim
     Lüften zählt nur sie: Kalte Außenluft mit 90 % relativer Feuchte ist
     deutlich trockener als Zimmerluft mit 55 %.</p>
 </section>
 
 <section class="tafel">
-  <h2>Die Nächte im Vergleich</h2>
-  <p class="leise">Wie viel CO₂ sich über die Nacht angesammelt hat. Dieser
-    Wert hängt an Belegung und Luftwechsel, nicht am Ausgangsniveau — er ist
-    damit der aussagekräftigste Einzelwert der Nacht.</p>
-  <div class="rollbar"><table id="naechte"></table></div>
+  <h2>Die Tage im Vergleich</h2>
+  <p class="leise">Wie lange die Luft an jedem Tag über den Schwellen lag.</p>
+  <div class="rollbar"><table id="tagestabelle"></table></div>
 </section>
 
 <section class="tafel">
@@ -238,7 +239,6 @@ const neu = (name, attribute) => {
 };
 const $ = (id) => document.getElementById(id);
 
-// Deutsche Zahlen mit Komma.
 function zahl(wert, stellen) {
   if (wert === null || wert === undefined || Number.isNaN(wert)) return "—";
   return Number(wert).toFixed(stellen === undefined ? 1 : stellen)
@@ -256,34 +256,176 @@ function dauer(minuten) {
 
 const alsZeit = (s) => new Date(String(s).replace(" ", "T")).getTime();
 const zwei = (n) => String(n).padStart(2, "0");
-
-function uhrzeit(ms) {
+const uhrzeit = (ms) => {
   const d = new Date(ms);
   return zwei(d.getHours()) + ":" + zwei(d.getMinutes());
-}
-function datumKurz(ms) {
+};
+const datumKurz = (ms) => {
   const d = new Date(ms);
   return zwei(d.getDate()) + "." + zwei(d.getMonth() + 1) + ".";
-}
+};
 
 const ANSICHTEN = [
-  ["nacht", "Letzte Nacht"],
   ["tag", "24 Stunden"],
   ["woche", "Woche"],
   ["monat", "Monat"],
 ];
 
 let daten = null;
-let ansicht = "nacht";
+let ansicht = "tag";
 
-// Hat der Betrachter selbst eine Ansicht gewaehlt? Dann wird sie beim
-// Nachladen alle fuenf Minuten nicht wieder umgestellt.
-let ansichtGewaehlt = false;
+const VORGABE = {
+  co2_gelb: 1000, co2_rot: 2000,
+  rh_gut: [40, 60], rh_rot: [30, 70],
+  t_gut: [20, 24], t_rot: [18, 26],
+};
+const schwellen = () => (daten && daten.schwellen) || VORGABE;
 
-// ---------------------------------------------------------------- Diagramm --
+// --------------------------------------------------------------- Ampel -----
 
-// kurven: [{name, feld, farbe, einheit, stellen}]
-// zusatz: {marken: [{wert, farbe, text}], nachtband: bool, achseStellen, ablesen}
+// Dreistufige Bewertung. Die CO2-Stufen stammen vom Umweltbundesamt, die
+// Bereiche fuer Temperatur und Feuchte sind Komfortwerte -- deshalb steht
+// bei ihnen bewusst "behaglich" und nicht "unbedenklich".
+function stufeCo2(wert) {
+  const s = schwellen();
+  if (wert === null || wert === undefined) {
+    return { farbe: "var(--achse)", wort: "keine Messung", rat: "" };
+  }
+  if (wert > s.co2_rot) {
+    return { farbe: "var(--schlecht)", wort: "hygienisch inakzeptabel",
+      rat: "Lüften. Reicht das nicht, ist der Raum nicht ausreichend belüftbar." };
+  }
+  if (wert > s.co2_gelb) {
+    return { farbe: "var(--mittel)", wort: "hygienisch auffällig",
+      rat: "Mehr Außenluft zuführen — lüften." };
+  }
+  return { farbe: "var(--gut)", wort: "hygienisch unbedenklich",
+    rat: "Keine Maßnahme nötig." };
+}
+
+function stufeBereich(wert, gut, rot) {
+  if (wert === null || wert === undefined) return "var(--achse)";
+  if (wert < rot[0] || wert > rot[1]) return "var(--schlecht)";
+  if (wert < gut[0] || wert > gut[1]) return "var(--mittel)";
+  return "var(--gut)";
+}
+
+// ---------------------------------------------------------------- Tacho ----
+
+const TACHO_VON = 400;
+const TACHO_BIS = 2600;
+
+function tachoZeichnen() {
+  const ziel = $("tacho");
+  ziel.innerHTML = "";
+
+  const wert = daten && daten.jetzt ? daten.jetzt.c : null;
+  const s = schwellen();
+
+  // Die Zahl steht UNTER der Nabe, nicht im Bogen: Dort liefe die Nadel
+  // quer durch sie hindurch, sobald der Wert in der Mitte des Bereichs
+  // liegt -- und das ist der haeufigste Fall.
+  const B = 320, H = 238;
+  const cx = 160, cy = 150, r = 118, dicke = 22;
+
+  const svg = neu("svg", { viewBox: `0 0 ${B} ${H}`, role: "img",
+    "aria-label": "CO2-Anzeige" });
+
+  // Winkel: 180 Grad ganz links, 360 Grad ganz rechts, oben herum.
+  const winkel = (v) => {
+    const begrenzt = Math.min(TACHO_BIS, Math.max(TACHO_VON, v));
+    return 180 + (begrenzt - TACHO_VON) / (TACHO_BIS - TACHO_VON) * 180;
+  };
+  const punktAuf = (grad, radius) => {
+    const rad = grad * Math.PI / 180;
+    return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)];
+  };
+  const bogen = (vonGrad, bisGrad, radius) => {
+    const [x1, y1] = punktAuf(vonGrad, radius);
+    const [x2, y2] = punktAuf(bisGrad, radius);
+    const gross = (bisGrad - vonGrad) > 180 ? 1 : 0;
+    return `M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${radius} ${radius} 0 ${gross} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+  };
+
+  // Die drei Bereiche
+  const baender = [
+    [TACHO_VON, s.co2_gelb, "var(--gut)"],
+    [s.co2_gelb, s.co2_rot, "var(--mittel)"],
+    [s.co2_rot, TACHO_BIS, "var(--schlecht)"],
+  ];
+  for (const [von, bis, farbe] of baender) {
+    svg.appendChild(neu("path", {
+      d: bogen(winkel(von), winkel(bis), r),
+      fill: "none", stroke: farbe, "stroke-width": dicke,
+    }));
+  }
+
+  // Teilstriche mit Beschriftung
+  for (const v of [TACHO_VON, s.co2_gelb, s.co2_rot, TACHO_BIS]) {
+    const g = winkel(v);
+    const [x1, y1] = punktAuf(g, r - dicke / 2 - 3);
+    const [x2, y2] = punktAuf(g, r + dicke / 2 + 3);
+    svg.appendChild(neu("line", { x1, y1, x2, y2,
+      stroke: "var(--schrift-leise)", "stroke-width": 1.5, opacity: 0.6 }));
+
+    const [tx, ty] = punktAuf(g, r + dicke / 2 + 18);
+    const t = neu("text", {
+      x: tx, y: ty + 4,
+      "text-anchor": g < 225 ? "start" : (g > 315 ? "end" : "middle"),
+      fill: "var(--schrift-leise)", "font-size": 11,
+    });
+    t.textContent = v;
+    svg.appendChild(t);
+  }
+
+  // Nadel
+  if (wert !== null && wert !== undefined) {
+    const g = winkel(wert);
+    const [sx, sy] = punktAuf(g, r - dicke / 2 - 6);
+    // Zwei kurze Schenkel hinter dem Drehpunkt ergeben eine Nadelform.
+    const [ax, ay] = punktAuf(g + 90, 7);
+    const [bx, by] = punktAuf(g - 90, 7);
+    svg.appendChild(neu("polygon", {
+      points: `${sx.toFixed(1)},${sy.toFixed(1)} ${ax.toFixed(1)},${ay.toFixed(1)} ${bx.toFixed(1)},${by.toFixed(1)}`,
+      fill: "var(--nadel)",
+    }));
+    svg.appendChild(neu("circle", { cx, cy, r: 9, fill: "var(--nadel)" }));
+    svg.appendChild(neu("circle", { cx, cy, r: 4, fill: "var(--flaeche)" }));
+  }
+
+  // Zahl unter der Nabe
+  const w = stufeCo2(wert);
+  const gross = neu("text", { x: cx, y: cy + 46, "text-anchor": "middle",
+    fill: w.farbe, "font-size": 44, "font-weight": 700 });
+  gross.textContent = wert === null || wert === undefined ? "—" : Math.round(wert);
+  svg.appendChild(gross);
+
+  const einheit = neu("text", { x: cx, y: cy + 68, "text-anchor": "middle",
+    fill: "var(--schrift-leise)", "font-size": 13 });
+  einheit.textContent = "ppm CO₂";
+  svg.appendChild(einheit);
+
+  ziel.appendChild(svg);
+
+  $("tacho-stufe").textContent = w.wort;
+  $("tacho-stufe").style.color = w.farbe;
+
+  let rat = w.rat;
+  if (daten && daten.jetzt) {
+    const alter = (Date.now() - alsZeit(daten.jetzt.z)) / 60000;
+    if (alter > 25) {
+      rat = "Letzte Messung vor " + dauer(alter)
+        + " — Gerät oder WLAN prüfen. Der Wert oben ist nicht aktuell.";
+    }
+  }
+  if (wert !== null && wert > TACHO_BIS) {
+    rat += " Die Skala endet bei " + TACHO_BIS + " ppm, der Messwert liegt darüber.";
+  }
+  $("tacho-rat").textContent = rat;
+}
+
+// ---------------------------------------------------------------- Kurven ---
+
 function zeichnen(ziel, punkte, kurven, zusatz) {
   const z = zusatz || {};
   ziel.innerHTML = "";
@@ -323,32 +465,9 @@ function zeichnen(ziel, punkte, kurven, zusatz) {
   const sx = (t) => randL + (t - x0) / spanne * iB;
   const sy = (v) => randO + (1 - (v - min) / (max - min)) * iH;
 
-  // Nacht hinterlegen -- nur wo einzelne Stunden noch unterscheidbar sind.
-  if (z.nachtband && daten && daten.nachtfenster && spanne <= 9 * 864e5) {
-    const { von, bis } = daten.nachtfenster;
-    const nachts = (ms) => { const h = new Date(ms).getHours();
-      return h >= von || h < bis; };
-    let start = null;
-    for (let i = 0; i < xs.length; i++) {
-      const jetztNacht = nachts(xs[i]);
-      if (jetztNacht && start === null) start = xs[i];
-      const letzter = i === xs.length - 1;
-      if (start !== null && (!jetztNacht || letzter)) {
-        const bisX = sx(jetztNacht ? xs[i] : xs[Math.max(0, i - 1)]);
-        const vonX = sx(start);
-        if (bisX > vonX) {
-          svg.appendChild(neu("rect", { x: vonX, y: randO,
-            width: bisX - vonX, height: iH, fill: "var(--nachtflaeche)" }));
-        }
-        start = null;
-      }
-    }
-  }
-
-  // Waagrechtes Gitter
-  const stufen = 4;
-  for (let i = 0; i <= stufen; i++) {
-    const wert = min + (max - min) * i / stufen;
+  const stufenZahl = 4;
+  for (let i = 0; i <= stufenZahl; i++) {
+    const wert = min + (max - min) * i / stufenZahl;
     const y = sy(wert);
     svg.appendChild(neu("line", { x1: randL, y1: y, x2: breite - randR, y2: y,
       stroke: "var(--linie)", "stroke-width": 1 }));
@@ -358,7 +477,6 @@ function zeichnen(ziel, punkte, kurven, zusatz) {
     svg.appendChild(t);
   }
 
-  // Zeitachse
   const teilung = breite < 480 ? 3 : 5;
   const langerZeitraum = spanne > 2 * 864e5;
   for (let i = 0; i <= teilung; i++) {
@@ -373,7 +491,6 @@ function zeichnen(ziel, punkte, kurven, zusatz) {
     x2: breite - randR, y2: randO + iH, stroke: "var(--achse)",
     "stroke-width": 1 }));
 
-  // Schwellenlinien
   for (const m of (z.marken || [])) {
     const y = sy(m.wert);
     svg.appendChild(neu("line", { x1: randL, y1: y, x2: breite - randR, y2: y,
@@ -386,8 +503,8 @@ function zeichnen(ziel, punkte, kurven, zusatz) {
     svg.appendChild(t);
   }
 
-  // Kurven. Fehlt ein Wert, bricht die Linie ab -- statt eine erfundene
-  // Gerade ueber die Luecke zu ziehen.
+  // Fehlt ein Wert, bricht die Linie ab -- statt eine erfundene Gerade
+  // ueber die Luecke zu ziehen.
   for (const k of kurven) {
     let pfad = "", offen = false;
     for (let i = 0; i < punkte.length; i++) {
@@ -403,7 +520,6 @@ function zeichnen(ziel, punkte, kurven, zusatz) {
     }
   }
 
-  // Ablesen beim Überfahren
   const faden = neu("line", { x1: 0, y1: randO, x2: 0, y2: randO + iH,
     stroke: "var(--achse)", "stroke-width": 1, opacity: 0 });
   svg.appendChild(faden);
@@ -459,7 +575,6 @@ function zeichnen(ziel, punkte, kurven, zusatz) {
   ziel.appendChild(svg);
 }
 
-// Legende, die beim Überfahren die Werte des Punktes zeigt.
 function ablesung(ziel, kurven, standard) {
   const male = (p) => {
     const q = p || standard;
@@ -478,68 +593,41 @@ function ablesung(ziel, kurven, standard) {
   return male;
 }
 
-// --------------------------------------------------------------- Bewertung --
-
-function schwellen() {
-  return (daten && daten.schwellen) || { gelb: 1000, rot: 1400 };
-}
-function stufe(co2) {
-  const s = schwellen();
-  if (co2 === null || co2 === undefined) return { farbe: "var(--achse)", wort: "unbekannt" };
-  if (co2 > s.rot) return { farbe: "var(--schlecht)", wort: "verbraucht" };
-  if (co2 > s.gelb) return { farbe: "var(--mittel)", wort: "wird verbraucht" };
-  return { farbe: "var(--gut)", wort: "gut" };
-}
-
 // ------------------------------------------------------------------ Aufbau --
 
 function kopf() {
   const s = daten && daten.summe;
   $("kopf").textContent = !daten ? "Daten nicht erreichbar."
-    : "Stand " + daten.erzeugt + " · " + (s.naechte || 0) + " Nächte"
-      + (s.erste_nacht ? " seit " + s.erste_nacht : "");
-}
-
-function meldung() {
-  const k = $("meldung");
-  const a = daten && daten.jetzt;
-  const setze = (farbe, text) => {
-    k.style.borderLeftColor = farbe;
-    k.innerHTML = '<span class="ampel" style="background:' + farbe
-      + '"></span><span>' + text + "</span>";
-  };
-  if (!a) { setze("var(--achse)", "Noch keine Messdaten."); return; }
-
-  const alter = (Date.now() - alsZeit(a.z)) / 60000;
-  if (alter > 25) {
-    setze("var(--mittel)", "Letzte Messung vor " + dauer(alter)
-      + " — Gerät oder WLAN prüfen.");
-    return;
-  }
-  const st = stufe(a.c);
-  setze(st.farbe, zahl(a.c, 0) + " ppm CO₂ · Luft " + st.wort
-    + (a.c > schwellen().gelb ? " — lüften" : ""));
+    : "Stand " + daten.erzeugt + " · " + (s.tage || 0) + " Tage"
+      + (s.erster_tag ? " seit " + s.erster_tag : "");
 }
 
 function kacheln() {
   const a = daten && daten.jetzt;
-  const n = daten && daten.letzte_nacht;
+  const h = daten && daten.heute;
+  const s = schwellen();
+
   const liste = [
     { titel: "CO₂ jetzt", wert: zahl(a && a.c, 0), e: "ppm",
-      fuss: stufe(a && a.c).wort },
-    { titel: "Anstieg letzte Nacht", wert: n ? "+" + zahl(n.anstieg, 0) : "—",
-      e: "ppm", fuss: n ? zahl(n.co2_anfang, 0) + " → " + zahl(n.co2_max, 0) + " ppm" : "—" },
-    { titel: "Nachts über 1000", wert: n ? dauer(n.min_ueber_gelb) : "—", e: "",
-      fuss: n ? "über 1400: " + dauer(n.min_ueber_rot) : "—" },
+      farbe: stufeCo2(a && a.c).farbe,
+      fuss: h ? "heute bis " + zahl(h.co2_max, 0) + " ppm" : "—" },
     { titel: "Temperatur", wert: zahl(a && a.t, 1), e: "°C",
-      fuss: n ? "nachts im Mittel " + zahl(n.t_mittel, 1) + " °C" : "—" },
+      farbe: stufeBereich(a && a.t, s.t_gut, s.t_rot),
+      fuss: h ? "heute " + zahl(h.t_min, 1) + " bis " + zahl(h.t_max, 1) + " °C" : "—" },
     { titel: "rel. Feuchte", wert: zahl(a && a.rh, 0), e: "%",
-      fuss: "absolut " + zahl(a && a.ah, 1) + " g/m³" },
-    { titel: "Taupunkt", wert: zahl(a && a.td, 1), e: "°C",
-      fuss: n ? "nachts bis " + zahl(n.td_max, 1) + " °C" : "—" },
+      farbe: stufeBereich(a && a.rh, s.rh_gut, s.rh_rot),
+      fuss: "behaglich sind " + s.rh_gut[0] + " bis " + s.rh_gut[1] + " %" },
+    { titel: "abs. Feuchte", wert: zahl(a && a.ah, 1), e: "g/m³",
+      farbe: "var(--ah)",
+      fuss: "Wassergehalt der Luft" },
+    { titel: "Heute über 1000", wert: h ? dauer(h.min_ueber_gelb) : "—", e: "",
+      farbe: "var(--mittel)",
+      fuss: h ? "über " + s.co2_rot + ": " + dauer(h.min_ueber_rot) : "—" },
   ];
+
   $("kacheln").innerHTML = liste.map((k) =>
-    '<div class="kachel"><div class="titel">' + k.titel + "</div>"
+    '<div class="kachel" style="border-left-color:' + k.farbe + '">'
+    + '<div class="titel">' + k.titel + "</div>"
     + '<div class="wert">' + k.wert
     + (k.e ? "<small>" + k.e + "</small>" : "") + "</div>"
     + '<div class="fuss">' + k.fuss + "</div></div>").join("");
@@ -552,7 +640,6 @@ function reiter() {
   $("reiter").querySelectorAll("button").forEach((b) => {
     b.addEventListener("click", () => {
       ansicht = b.dataset.a;
-      ansichtGewaehlt = true;
       reiter();
       diagramme();
     });
@@ -565,106 +652,91 @@ function diagramme() {
   const s = schwellen();
   const gemittelt = punkte.length > 0 && punkte[0].cmax !== undefined;
 
-  const unter = $("co2-unter");
-  if (ansicht === "nacht" && daten && daten.letzte_nacht) {
-    const nf = daten.nachtfenster;
-    unter.textContent = "Nacht auf den "
-      + new Date(daten.letzte_nacht.nacht + "T12:00:00")
-        .toLocaleDateString("de-AT", { day: "2-digit", month: "long" })
-      + ", " + nf.von + ":00 bis " + nf.bis + ":00 Uhr, Minutentakt.";
-  } else {
-    unter.textContent = gemittelt
-      ? "Gemittelte Werte — die Nacht ist hinterlegt." : "";
-  }
-
   const kCo2 = [{ name: "CO₂", feld: "c", farbe: "var(--co2)",
     einheit: "ppm", stellen: 0 }];
   zeichnen($("bild-co2"), punkte, kCo2, {
-    achseStellen: 0, nachtband: ansicht !== "nacht",
+    achseStellen: 0,
     marken: [
-      { wert: s.gelb, farbe: "var(--mittel)", text: s.gelb + " ppm" },
-      { wert: s.rot, farbe: "var(--schlecht)", text: s.rot + " ppm" },
+      { wert: s.co2_gelb, farbe: "var(--mittel)", text: s.co2_gelb + " ppm" },
+      { wert: s.co2_rot, farbe: "var(--schlecht)", text: s.co2_rot + " ppm" },
     ],
     ablesen: ablesung($("ab-co2"), kCo2, letzter),
   });
 
-  $("co2-erklaerung").innerHTML = "<strong>" + s.gelb
-    + " ppm</strong> ist der Pettenkofer-Wert, seit 1858 die gängige Grenze"
-    + " für einwandfreie Raumluft. Ab rund <strong>" + s.rot
-    + " ppm</strong> gilt sie als verbraucht. Frischluft liegt bei etwa"
-    + " 420 ppm."
+  $("co2-erklaerung").innerHTML = "Gestrichelt die beiden Schwellen: ab <strong>"
+    + s.co2_gelb + " ppm</strong> gilt die Luft als hygienisch auffällig, ab "
+    + "<strong>" + s.co2_rot + " ppm</strong> als inakzeptabel."
     + (gemittelt ? " In dieser Ansicht ist jeder Punkt ein Mittelwert;"
       + " einzelne kurze Spitzen können darin untergehen." : "");
 
-  const kTemp = [
-    { name: "Temperatur", feld: "t", farbe: "var(--temp)", einheit: "°C", stellen: 1 },
-    { name: "Taupunkt", feld: "td", farbe: "var(--taupunkt)", einheit: "°C", stellen: 1 },
-  ];
+  const kTemp = [{ name: "Temperatur", feld: "t", farbe: "var(--temp)",
+    einheit: "°C", stellen: 1 }];
   zeichnen($("bild-temp"), punkte, kTemp, { achseStellen: 1,
-    nachtband: ansicht !== "nacht",
     ablesen: ablesung($("ab-temp"), kTemp, letzter) });
 
   const kRh = [{ name: "relative Feuchte", feld: "rh", farbe: "var(--rh)",
     einheit: "%", stellen: 0 }];
-  zeichnen($("bild-rh"), punkte, kRh, { achseStellen: 0,
-    nachtband: ansicht !== "nacht",
+  zeichnen($("bild-rh"), punkte, kRh, {
+    achseStellen: 0,
+    marken: [
+      { wert: s.rh_gut[0], farbe: "var(--mittel)", text: s.rh_gut[0] + " %" },
+      { wert: s.rh_gut[1], farbe: "var(--mittel)", text: s.rh_gut[1] + " %" },
+    ],
     ablesen: ablesung($("ab-rh"), kRh, letzter) });
 
   const kAh = [{ name: "absolute Feuchte", feld: "ah", farbe: "var(--ah)",
     einheit: "g/m³", stellen: 1 }];
   zeichnen($("bild-ah"), punkte, kAh, { achseStellen: 1,
-    nachtband: ansicht !== "nacht",
     ablesen: ablesung($("ab-ah"), kAh, letzter) });
 }
 
-function naechteTabelle() {
-  const reihe = ((daten && daten.naechte) || []).slice().reverse();
+function tagestabelle() {
+  const reihe = ((daten && daten.tage) || []).slice().reverse();
   const s = schwellen();
   if (reihe.length === 0) {
-    $("naechte").innerHTML = '<tbody><tr><td>Noch keine vollständige Nacht.</td></tr></tbody>';
+    $("tagestabelle").innerHTML =
+      '<tbody><tr><td>Noch kein ausgewerteter Tag.</td></tr></tbody>';
     return;
   }
-  const groesster = Math.max(...reihe.map((n) => n.anstieg), 1);
 
-  let html = "<thead><tr><th>Nacht auf</th><th>Anstieg</th>"
-    + '<th class="balkenfeld"></th><th>Spitze</th><th>über ' + s.gelb
-    + "</th><th>Ø Temp.</th><th>Taupunkt max</th></tr></thead><tbody>";
-  for (const n of reihe) {
-    const d = new Date(n.nacht + "T12:00:00");
-    const st = stufe(n.co2_max);
+  let html = "<thead><tr><th>Tag</th><th>Ø CO₂</th><th>Spitze</th>"
+    + '<th class="balkenfeld">Zeit über den Schwellen</th>'
+    + "<th>über " + s.co2_gelb + "</th><th>Ø Temp.</th><th>Ø rF.</th>"
+    + "</tr></thead><tbody>";
+  for (const t of reihe) {
+    const d = new Date(t.tag + "T12:00:00");
+    const gelb = t.min_ueber_gelb || 0;
+    const rot = t.min_ueber_rot || 0;
+    // Die rote Zeit steckt in der gelben -- sonst waere der Balken laenger
+    // als der Tag.
+    const nurGelb = Math.max(0, gelb - rot);
+    const basis = Math.max(1, t.minuten);
     html += "<tr><td>"
       + d.toLocaleDateString("de-AT", { weekday: "short", day: "2-digit", month: "2-digit" })
-      + "</td><td>+" + zahl(n.anstieg, 0) + "</td>"
-      + '<td class="balkenfeld"><span class="bahn"><i style="width:'
-      + (100 * n.anstieg / groesster).toFixed(1) + "%;background:" + st.farbe
-      + '"></i></span></td>'
-      + '<td style="color:' + st.farbe + '">' + zahl(n.co2_max, 0) + "</td>"
-      + "<td>" + dauer(n.min_ueber_gelb) + "</td>"
-      + "<td>" + zahl(n.t_mittel, 1) + "</td>"
-      + "<td>" + zahl(n.td_max, 1) + "</td></tr>";
+      + "</td><td>" + zahl(t.co2_mittel, 0) + "</td>"
+      + '<td style="color:' + stufeCo2(t.co2_max).farbe + '">'
+      + zahl(t.co2_max, 0) + "</td>"
+      + '<td class="balkenfeld"><span class="bahn">'
+      + '<i style="width:' + (100 * nurGelb / basis).toFixed(1) + '%;background:var(--mittel)"></i>'
+      + '<i style="width:' + (100 * rot / basis).toFixed(1) + '%;background:var(--schlecht)"></i>'
+      + "</span></td>"
+      + "<td>" + dauer(gelb) + "</td>"
+      + "<td>" + zahl(t.t_mittel, 1) + "</td>"
+      + "<td>" + zahl(t.rh_mittel, 0) + "</td></tr>";
   }
-  $("naechte").innerHTML = html + "</tbody>";
+  $("tagestabelle").innerHTML = html + "</tbody>";
 }
 
 function archiv() {
-  const tage = ((daten && daten.tage) || []).slice().reverse().slice(0, 21);
-  $("archiv").innerHTML = tage.length === 0
+  const dateien = ((daten && daten.dateien) || []).slice().reverse().slice(0, 21);
+  $("archiv").innerHTML = dateien.length === 0
     ? '<span class="leise">noch leer</span>'
-    : tage.map((t) => '<a href="tage/' + t + '.csv" download>' + t + "</a>").join("");
+    : dateien.map((t) => '<a href="tage/' + t + '.csv" download>' + t + "</a>").join("");
 }
 
 function allesZeichnen() {
-  // Solange noch keine Nacht vollstaendig aufgezeichnet ist, waere die
-  // Standardansicht leer -- am ersten Tag also die ganze Seite. Dann lieber
-  // die letzten 24 Stunden zeigen. Eine selbst gewaehlte Ansicht bleibt.
-  if (!ansichtGewaehlt && ansicht === "nacht") {
-    const nacht = daten && daten.verlauf && daten.verlauf.nacht;
-    if (!nacht || nacht.length < 2) {
-      ansicht = "tag";
-    }
-  }
-  kopf(); meldung(); kacheln(); reiter(); diagramme();
-  naechteTabelle(); archiv();
+  kopf(); tachoZeichnen(); kacheln(); reiter(); diagramme();
+  tagestabelle(); archiv();
 }
 
 async function laden() {
@@ -674,10 +746,8 @@ async function laden() {
     daten = await antwort.json();
   } catch (fehler) {
     daten = null;
-    $("meldung").innerHTML = '<span class="ampel" style="background:var(--schlecht)">'
-      + "</span><span>dashboard.json ist nicht erreichbar (" + fehler.message
-      + ").</span>";
-    $("meldung").style.borderLeftColor = "var(--schlecht)";
+    $("tacho-stufe").textContent = "Daten nicht erreichbar";
+    $("tacho-rat").textContent = "dashboard.json: " + fehler.message;
   }
   allesZeichnen();
 }
@@ -685,7 +755,7 @@ async function laden() {
 let umbau = null;
 window.addEventListener("resize", () => {
   clearTimeout(umbau);
-  umbau = setTimeout(diagramme, 150);
+  umbau = setTimeout(() => { tachoZeichnen(); diagramme(); }, 150);
 });
 
 laden();
