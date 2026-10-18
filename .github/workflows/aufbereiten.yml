@@ -33,19 +33,27 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Formeln pruefen
-        # Laeuft in zwei Sekunden und verhindert, dass eine kaputte Formel
-        # stillschweigend ein Archiv voll falscher Zahlen erzeugt.
-        run: python werkzeuge/test_luft.py
+      - name: Selbsttests
+        # Laufen in Sekunden und verhindern, dass eine kaputte Formel oder
+        # eine verlorene Zeile stillschweigend ins Archiv wandert.
+        run: |
+          python werkzeuge/test_luft.py
+          python werkzeuge/test_zeitumstellung.py
 
       - name: Rohpakete einarbeiten
         run: python werkzeuge/aufbereiten.py
 
       - name: Ergebnis zurueckschreiben
-        # dashboard.json wird NICHT eingecheckt: Die Datei entsteht bei
-        # jedem Lauf neu und waere mit 96 Fassungen am Tag der groesste
-        # Posten der Versionsgeschichte. Fuer die Veroeffentlichung liegt
-        # sie trotzdem im Arbeitsverzeichnis.
+        # "git add -A" nimmt den ganzen Baum. Was nicht hineingehoert,
+        # steht in .gitignore -- allen voran dashboard.json: Die Datei
+        # entsteht bei jedem Lauf neu und waere mit 96 Fassungen am Tag der
+        # groesste Posten der Versionsgeschichte. Fuer die Veroeffentlichung
+        # liegt sie trotzdem im Arbeitsverzeichnis.
+        #
+        # Bewusst pauschal statt einzelne Pfade aufzuzaehlen: Diese Datei
+        # laesst sich nur von Hand im Browser aendern, weil das Geraetetoken
+        # keine Workflows schreiben darf. Sie soll also nicht jedes Mal
+        # angefasst werden muessen, wenn eine erzeugte Datei anders heisst.
         #
         # "[skip ci]" verhindert, dass dieser Commit den Workflow erneut
         # ausloest -- er loescht Dateien unter roh/, und genau darauf
@@ -53,7 +61,7 @@ jobs:
         run: |
           git config user.name  "Raumluft"
           git config user.email "raumluft@users.noreply.github.com"
-          git add -A tage naechte.json roh
+          git add -A
           if git diff --cached --quiet; then
             echo "Nichts zurueckzuschreiben."
           else
