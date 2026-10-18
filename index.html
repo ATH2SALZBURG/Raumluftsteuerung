@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raumluft Schlafzimmer</title>
+<style>
+  :root {
+    color-scheme: light;
+    --grund: #f5f5f7;
+    --flaeche: #ffffff;
+    --schrift: #17171c;
+    --schrift-leise: #70707c;
+    --linie: #e4e4e9;
+    --achse: #c8c8d0;
+    --kante: rgba(23,23,28,0.09);
+    --co2: #5b4bdb;
+    --temp: #d9682f;
+    --taupunkt: #0d8f84;
+    --rh: #2e7fd4;
+    --ah: #a06a10;
+    --gut: #15a349;
+    --mittel: #e0a806;
+    --schlecht: #d33a3a;
+    --nachtflaeche: rgba(91,75,219,0.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --grund: #121215;
+      --flaeche: #1c1c20;
+      --schrift: #f5f5f7;
+      --schrift-leise: #9a9aa6;
+      --linie: #2e2e35;
+      --achse: #3c3c45;
+      --kante: rgba(245,245,247,0.10);
+      --co2: #8f7dff;
+      --temp: #e8894f;
+      --taupunkt: #22b3a6;
+      --rh: #5a9ee6;
+      --ah: #d4a33a;
+      --gut: #2dbf63;
+      --mittel: #f0bd2a;
+      --schlecht: #ef5a5a;
+      --nachtflaeche: rgba(143,125,255,0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --grund: #121215;
+    --flaeche: #1c1c20;
+    --schrift: #f5f5f7;
+    --schrift-leise: #9a9aa6;
+    --linie: #2e2e35;
+    --achse: #3c3c45;
+    --kante: rgba(245,245,247,0.10);
+    --co2: #8f7dff;
+    --temp: #e8894f;
+    --taupunkt: #22b3a6;
+    --rh: #5a9ee6;
+    --ah: #d4a33a;
+    --gut: #2dbf63;
+    --mittel: #f0bd2a;
+    --schlecht: #ef5a5a;
+    --nachtflaeche: rgba(143,125,255,0.14);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 26px 16px 72px;
+    background: var(--grund);
+    color: var(--schrift);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+  .mitte { max-width: 1020px; margin: 0 auto; }
+
+  h1 { font-size: 1.5rem; margin: 0 0 3px; letter-spacing: -0.015em; }
+  h2 { font-size: 1rem; margin: 0 0 4px; font-weight: 600; }
+  .leise { color: var(--schrift-leise); font-size: 0.85rem; }
+  header .leise { margin: 0 0 20px; }
+
+  .meldung {
+    display: flex; align-items: center; gap: 11px;
+    background: var(--flaeche);
+    border: 1px solid var(--kante);
+    border-left-width: 4px;
+    border-radius: 12px;
+    padding: 13px 16px;
+    margin-bottom: 18px;
+    font-weight: 500;
+  }
+  .ampel { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+  .kacheln {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .kachel {
+    background: var(--flaeche);
+    border: 1px solid var(--kante);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .kachel .titel { font-size: 0.72rem; color: var(--schrift-leise); text-transform: uppercase; letter-spacing: 0.05em; }
+  .kachel .wert { font-size: 1.5rem; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.25; }
+  .kachel .wert small { font-size: 0.82rem; font-weight: 500; color: var(--schrift-leise); margin-left: 2px; }
+  .kachel .fuss { font-size: 0.75rem; color: var(--schrift-leise); }
+
+  .reiter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .reiter button {
+    font: inherit; font-size: 0.85rem;
+    padding: 7px 15px;
+    border-radius: 9px;
+    border: 1px solid var(--kante);
+    background: var(--flaeche);
+    color: var(--schrift-leise);
+    cursor: pointer;
+  }
+  .reiter button[aria-pressed="true"] {
+    background: var(--co2); border-color: var(--co2); color: #fff; font-weight: 600;
+  }
+
+  .tafel {
+    background: var(--flaeche);
+    border: 1px solid var(--kante);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .ablesung { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.82rem; color: var(--schrift-leise); margin: 6px 0 8px; min-height: 1.5em; }
+  .ablesung span.p { display: flex; align-items: center; gap: 6px; }
+  .wisch { display: inline-block; width: 15px; height: 3px; border-radius: 2px; flex: none; }
+  .ablesung b { font-variant-numeric: tabular-nums; color: var(--schrift); font-weight: 650; }
+  .bild svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+  .erklaerung { margin: 12px 0 0; font-size: 0.82rem; color: var(--schrift-leise); }
+  .erklaerung + .erklaerung { margin-top: 6px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: right; padding: 7px 6px; border-bottom: 1px solid var(--linie); font-variant-numeric: tabular-nums; }
+  th { color: var(--schrift-leise); font-weight: 500; }
+  th:first-child, td:first-child { text-align: left; }
+  tbody tr:last-child td { border-bottom: none; }
+  .balkenfeld { width: 34%; }
+  .bahn { display: block; height: 15px; background: var(--linie); border-radius: 4px; overflow: hidden; display: flex; }
+  .bahn i { display: block; height: 100%; }
+  .rollbar { overflow-x: auto; }
+
+  .archiv { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+  .archiv a { font-size: 0.8rem; color: var(--schrift-leise); text-decoration: none; border: 1px solid var(--kante); border-radius: 7px; padding: 3px 9px; }
+  .archiv a:hover { color: var(--schrift); border-color: var(--achse); }
+
+  @media (max-width: 560px) {
+    .kachel .wert { font-size: 1.28rem; }
+    .balkenfeld { width: 26%; }
+    th, td { padding: 6px 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="mitte">
+
+<header>
+  <h1>Raumluft — Schlafzimmer</h1>
+  <p class="leise" id="kopf">lädt …</p>
+</header>
+
+<div class="meldung" id="meldung" style="border-left-color:var(--achse)">
+  <span class="ampel" style="background:var(--achse)"></span><span>lädt …</span>
+</div>
+
+<section class="kacheln" id="kacheln"></section>
+
+<nav class="reiter" id="reiter" aria-label="Zeitraum"></nav>
+
+<section class="tafel">
+  <h2>CO₂</h2>
+  <p class="leise" id="co2-unter"></p>
+  <div class="ablesung" id="ab-co2"></div>
+  <div class="bild" id="bild-co2"></div>
+  <p class="erklaerung" id="co2-erklaerung"></p>
+</section>
+
+<section class="tafel">
+  <h2>Temperatur und Taupunkt</h2>
+  <div class="ablesung" id="ab-temp"></div>
+  <div class="bild" id="bild-temp"></div>
+  <p class="erklaerung">Der <strong>Taupunkt</strong> ist die Temperatur, ab
+    der die Luft an einer Fläche Wasser abgibt. Ist eine Wand kälter —
+    Außenecke, hinter dem Schrank, Fensterlaibung — schlägt sich dort Wasser
+    nieder. Das ist der übliche Weg zu Schimmel im Schlafzimmer.</p>
+</section>
+
+<section class="tafel">
+  <h2>Luftfeuchtigkeit</h2>
+  <div class="ablesung" id="ab-rh"></div>
+  <div class="bild" id="bild-rh"></div>
+  <div class="ablesung" id="ab-ah" style="margin-top:16px"></div>
+  <div class="bild" id="bild-ah"></div>
+  <p class="erklaerung">Zwei Diagramme, weil Prozent und g/m³ verschiedene
+    Größenordnungen haben — auf einer gemeinsamen Achse läge die untere Kurve
+    platt am Boden.</p>
+  <p class="erklaerung">Die <strong>absolute</strong> Feuchte sagt, wie viel
+    Wasser wirklich in der Luft ist, unabhängig von der Temperatur. Beim
+    Lüften zählt nur sie: Kalte Außenluft mit 90 % relativer Feuchte ist
+    deutlich trockener als Zimmerluft mit 55 %.</p>
+</section>
+
+<section class="tafel">
+  <h2>Die Nächte im Vergleich</h2>
+  <p class="leise">Wie viel CO₂ sich über die Nacht angesammelt hat. Dieser
+    Wert hängt an Belegung und Luftwechsel, nicht am Ausgangsniveau — er ist
+    damit der aussagekräftigste Einzelwert der Nacht.</p>
+  <div class="rollbar"><table id="naechte"></table></div>
+</section>
+
+<section class="tafel">
+  <h2>Archiv</h2>
+  <p class="leise">Eine Datei je Tag, Rohwerte wie gemessen.</p>
+  <div class="archiv" id="archiv"></div>
+</section>
+
+</div>
+
+<script>
+"use strict";
+
+const NS = "http://www.w3.org/2000/svg";
+const neu = (name, attribute) => {
+  const k = document.createElementNS(NS, name);
+  for (const a in attribute) k.setAttribute(a, attribute[a]);
+  return k;
+};
+const $ = (id) => document.getElementById(id);
+
+// Deutsche Zahlen mit Komma.
+function zahl(wert, stellen) {
+  if (wert === null || wert === undefined || Number.isNaN(wert)) return "—";
+  return Number(wert).toFixed(stellen === undefined ? 1 : stellen)
+    .replace(".", ",");
+}
+
+function dauer(minuten) {
+  if (minuten === null || minuten === undefined) return "—";
+  const m = Math.round(minuten);
+  if (m === 0) return "0 min";
+  if (m < 60) return m + " min";
+  const rest = m % 60;
+  return Math.floor(m / 60) + " h" + (rest ? " " + rest + " min" : "");
+}
+
+const alsZeit = (s) => new Date(String(s).replace(" ", "T")).getTime();
+const zwei = (n) => String(n).padStart(2, "0");
+
+function uhrzeit(ms) {
+  const d = new Date(ms);
+  return zwei(d.getHours()) + ":" + zwei(d.getMinutes());
+}
+function datumKurz(ms) {
+  const d = new Date(ms);
+  return zwei(d.getDate()) + "." + zwei(d.getMonth() + 1) + ".";
+}
+
+const ANSICHTEN = [
+  ["nacht", "Letzte Nacht"],
+  ["tag", "24 Stunden"],
+  ["woche", "Woche"],
+  ["monat", "Monat"],
+];
+
+let daten = null;
+let ansicht = "nacht";
+
+// ---------------------------------------------------------------- Diagramm --
+
+// kurven: [{name, feld, farbe, einheit, stellen}]
+// zusatz: {marken: [{wert, farbe, text}], nachtband: bool, achseStellen, ablesen}
+function zeichnen(ziel, punkte, kurven, zusatz) {
+  const z = zusatz || {};
+  ziel.innerHTML = "";
+  if (!punkte || punkte.length < 2) {
+    ziel.innerHTML = '<p class="erklaerung">Für diesen Zeitraum liegen noch'
+      + " keine Daten vor.</p>";
+    if (z.ablesen) z.ablesen(null);
+    return;
+  }
+
+  const breite = Math.max(300, ziel.clientWidth || 640);
+  const hoehe = 236;
+  const randL = 48, randR = 12, randO = 12, randU = 28;
+  const iB = breite - randL - randR;
+  const iH = hoehe - randO - randU;
+
+  const svg = neu("svg", { viewBox: `0 0 ${breite} ${hoehe}`,
+    width: breite, height: hoehe, role: "img" });
+
+  const xs = punkte.map((p) => alsZeit(p.z));
+  const x0 = xs[0], x1 = xs[xs.length - 1];
+  const spanne = Math.max(1, x1 - x0);
+
+  let min = Infinity, max = -Infinity;
+  const beachte = (v) => {
+    if (v === null || v === undefined || Number.isNaN(v)) return;
+    if (v < min) min = v;
+    if (v > max) max = v;
+  };
+  for (const k of kurven) for (const p of punkte) beachte(p[k.feld]);
+  for (const m of (z.marken || [])) beachte(m.wert);
+  if (!isFinite(min)) { min = 0; max = 1; }
+  if (max - min < 1e-6) max = min + 1;
+  const luft = (max - min) * 0.09;
+  min -= luft; max += luft;
+
+  const sx = (t) => randL + (t - x0) / spanne * iB;
+  const sy = (v) => randO + (1 - (v - min) / (max - min)) * iH;
+
+  // Nacht hinterlegen -- nur wo einzelne Stunden noch unterscheidbar sind.
+  if (z.nachtband && daten && daten.nachtfenster && spanne <= 9 * 864e5) {
+    const { von, bis } = daten.nachtfenster;
+    const nachts = (ms) => { const h = new Date(ms).getHours();
+      return h >= von || h < bis; };
+    let start = null;
+    for (let i = 0; i < xs.length; i++) {
+      const jetztNacht = nachts(xs[i]);
+      if (jetztNacht && start === null) start = xs[i];
+      const letzter = i === xs.length - 1;
+      if (start !== null && (!jetztNacht || letzter)) {
+        const bisX = sx(jetztNacht ? xs[i] : xs[Math.max(0, i - 1)]);
+        const vonX = sx(start);
+        if (bisX > vonX) {
+          svg.appendChild(neu("rect", { x: vonX, y: randO,
+            width: bisX - vonX, height: iH, fill: "var(--nachtflaeche)" }));
+        }
+        start = null;
+      }
+    }
+  }
+
+  // Waagrechtes Gitter
+  const stufen = 4;
+  for (let i = 0; i <= stufen; i++) {
+    const wert = min + (max - min) * i / stufen;
+    const y = sy(wert);
+    svg.appendChild(neu("line", { x1: randL, y1: y, x2: breite - randR, y2: y,
+      stroke: "var(--linie)", "stroke-width": 1 }));
+    const t = neu("text", { x: randL - 7, y: y + 4, "text-anchor": "end",
+      fill: "var(--schrift-leise)", "font-size": 11 });
+    t.textContent = zahl(wert, z.achseStellen === undefined ? 0 : z.achseStellen);
+    svg.appendChild(t);
+  }
+
+  // Zeitachse
+  const teilung = breite < 480 ? 3 : 5;
+  const langerZeitraum = spanne > 2 * 864e5;
+  for (let i = 0; i <= teilung; i++) {
+    const ms = x0 + spanne * i / teilung;
+    const t = neu("text", { x: sx(ms), y: hoehe - 9,
+      "text-anchor": i === 0 ? "start" : (i === teilung ? "end" : "middle"),
+      fill: "var(--schrift-leise)", "font-size": 11 });
+    t.textContent = langerZeitraum ? datumKurz(ms) : uhrzeit(ms);
+    svg.appendChild(t);
+  }
+  svg.appendChild(neu("line", { x1: randL, y1: randO + iH,
+    x2: breite - randR, y2: randO + iH, stroke: "var(--achse)",
+    "stroke-width": 1 }));
+
+  // Schwellenlinien
+  for (const m of (z.marken || [])) {
+    const y = sy(m.wert);
+    svg.appendChild(neu("line", { x1: randL, y1: y, x2: breite - randR, y2: y,
+      stroke: m.farbe, "stroke-width": 1.5, "stroke-dasharray": "5 4",
+      opacity: 0.9 }));
+    const t = neu("text", { x: breite - randR - 3, y: y - 5,
+      "text-anchor": "end", fill: m.farbe, "font-size": 10.5,
+      "font-weight": 600 });
+    t.textContent = m.text;
+    svg.appendChild(t);
+  }
+
+  // Kurven. Fehlt ein Wert, bricht die Linie ab -- statt eine erfundene
+  // Gerade ueber die Luecke zu ziehen.
+  for (const k of kurven) {
+    let pfad = "", offen = false;
+    for (let i = 0; i < punkte.length; i++) {
+      const v = punkte[i][k.feld];
+      if (v === null || v === undefined || Number.isNaN(v)) { offen = false; continue; }
+      pfad += (offen ? " L " : " M ") + sx(xs[i]).toFixed(1) + " " + sy(v).toFixed(1);
+      offen = true;
+    }
+    if (pfad) {
+      svg.appendChild(neu("path", { d: pfad.trim(), fill: "none",
+        stroke: k.farbe, "stroke-width": 1.9, "stroke-linejoin": "round",
+        "stroke-linecap": "round" }));
+    }
+  }
+
+  // Ablesen beim Überfahren
+  const faden = neu("line", { x1: 0, y1: randO, x2: 0, y2: randO + iH,
+    stroke: "var(--achse)", "stroke-width": 1, opacity: 0 });
+  svg.appendChild(faden);
+  const kugeln = kurven.map((k) => {
+    const c = neu("circle", { r: 3.6, fill: k.farbe, opacity: 0 });
+    svg.appendChild(c);
+    return c;
+  });
+  const feld = neu("rect", { x: randL, y: randO, width: iB, height: iH,
+    fill: "transparent", style: "cursor:crosshair" });
+  svg.appendChild(feld);
+
+  const zeige = (i) => {
+    const p = punkte[i];
+    faden.setAttribute("x1", sx(xs[i]));
+    faden.setAttribute("x2", sx(xs[i]));
+    faden.setAttribute("opacity", 1);
+    kurven.forEach((k, j) => {
+      const v = p[k.feld];
+      if (v === null || v === undefined || Number.isNaN(v)) {
+        kugeln[j].setAttribute("opacity", 0);
+      } else {
+        kugeln[j].setAttribute("cx", sx(xs[i]));
+        kugeln[j].setAttribute("cy", sy(v));
+        kugeln[j].setAttribute("opacity", 1);
+      }
+    });
+    if (z.ablesen) z.ablesen(p);
+  };
+  const verbirg = () => {
+    faden.setAttribute("opacity", 0);
+    kugeln.forEach((c) => c.setAttribute("opacity", 0));
+    if (z.ablesen) z.ablesen(null);
+  };
+  const naechster = (klientX) => {
+    const kasten = svg.getBoundingClientRect();
+    const ms = x0 + ((klientX - kasten.left) / kasten.width * breite - randL)
+      / iB * spanne;
+    let beste = 0, abstand = Infinity;
+    for (let i = 0; i < xs.length; i++) {
+      const a = Math.abs(xs[i] - ms);
+      if (a < abstand) { abstand = a; beste = i; }
+    }
+    return beste;
+  };
+
+  feld.addEventListener("mousemove", (e) => zeige(naechster(e.clientX)));
+  feld.addEventListener("mouseleave", verbirg);
+  feld.addEventListener("touchstart", (e) => zeige(naechster(e.touches[0].clientX)), { passive: true });
+  feld.addEventListener("touchmove", (e) => zeige(naechster(e.touches[0].clientX)), { passive: true });
+  feld.addEventListener("touchend", verbirg);
+
+  ziel.appendChild(svg);
+}
+
+// Legende, die beim Überfahren die Werte des Punktes zeigt.
+function ablesung(ziel, kurven, standard) {
+  const male = (p) => {
+    const q = p || standard;
+    let html = "";
+    if (p) html += '<span class="p"><b>' + uhrzeit(alsZeit(p.z)) + "</b></span>";
+    for (const k of kurven) {
+      const v = q ? q[k.feld] : null;
+      html += '<span class="p"><i class="wisch" style="background:' + k.farbe
+        + '"></i>' + k.name + " <b>"
+        + (v === null || v === undefined ? "—" : zahl(v, k.stellen) + " " + k.einheit)
+        + "</b></span>";
+    }
+    ziel.innerHTML = html;
+  };
+  male(null);
+  return male;
+}
+
+// --------------------------------------------------------------- Bewertung --
+
+function schwellen() {
+  return (daten && daten.schwellen) || { gelb: 1000, rot: 1400 };
+}
+function stufe(co2) {
+  const s = schwellen();
+  if (co2 === null || co2 === undefined) return { farbe: "var(--achse)", wort: "unbekannt" };
+  if (co2 > s.rot) return { farbe: "var(--schlecht)", wort: "verbraucht" };
+  if (co2 > s.gelb) return { farbe: "var(--mittel)", wort: "wird verbraucht" };
+  return { farbe: "var(--gut)", wort: "gut" };
+}
+
+// ------------------------------------------------------------------ Aufbau --
+
+function kopf() {
+  const s = daten && daten.summe;
+  $("kopf").textContent = !daten ? "Daten nicht erreichbar."
+    : "Stand " + daten.erzeugt + " · " + (s.naechte || 0) + " Nächte"
+      + (s.erste_nacht ? " seit " + s.erste_nacht : "");
+}
+
+function meldung() {
+  const k = $("meldung");
+  const a = daten && daten.jetzt;
+  const setze = (farbe, text) => {
+    k.style.borderLeftColor = farbe;
+    k.innerHTML = '<span class="ampel" style="background:' + farbe
+      + '"></span><span>' + text + "</span>";
+  };
+  if (!a) { setze("var(--achse)", "Noch keine Messdaten."); return; }
+
+  const alter = (Date.now() - alsZeit(a.z)) / 60000;
+  if (alter > 25) {
+    setze("var(--mittel)", "Letzte Messung vor " + dauer(alter)
+      + " — Gerät oder WLAN prüfen.");
+    return;
+  }
+  const st = stufe(a.c);
+  setze(st.farbe, zahl(a.c, 0) + " ppm CO₂ · Luft " + st.wort
+    + (a.c > schwellen().gelb ? " — lüften" : ""));
+}
+
+function kacheln() {
+  const a = daten && daten.jetzt;
+  const n = daten && daten.letzte_nacht;
+  const liste = [
+    { titel: "CO₂ jetzt", wert: zahl(a && a.c, 0), e: "ppm",
+      fuss: stufe(a && a.c).wort },
+    { titel: "Anstieg letzte Nacht", wert: n ? "+" + zahl(n.anstieg, 0) : "—",
+      e: "ppm", fuss: n ? zahl(n.co2_anfang, 0) + " → " + zahl(n.co2_max, 0) + " ppm" : "—" },
+    { titel: "Nachts über 1000", wert: n ? dauer(n.min_ueber_gelb) : "—", e: "",
+      fuss: n ? "über 1400: " + dauer(n.min_ueber_rot) : "—" },
+    { titel: "Temperatur", wert: zahl(a && a.t, 1), e: "°C",
+      fuss: n ? "nachts im Mittel " + zahl(n.t_mittel, 1) + " °C" : "—" },
+    { titel: "rel. Feuchte", wert: zahl(a && a.rh, 0), e: "%",
+      fuss: "absolut " + zahl(a && a.ah, 1) + " g/m³" },
+    { titel: "Taupunkt", wert: zahl(a && a.td, 1), e: "°C",
+      fuss: n ? "nachts bis " + zahl(n.td_max, 1) + " °C" : "—" },
+  ];
+  $("kacheln").innerHTML = liste.map((k) =>
+    '<div class="kachel"><div class="titel">' + k.titel + "</div>"
+    + '<div class="wert">' + k.wert
+    + (k.e ? "<small>" + k.e + "</small>" : "") + "</div>"
+    + '<div class="fuss">' + k.fuss + "</div></div>").join("");
+}
+
+function reiter() {
+  $("reiter").innerHTML = ANSICHTEN.map(([k, name]) =>
+    '<button type="button" data-a="' + k + '" aria-pressed="'
+    + (k === ansicht) + '">' + name + "</button>").join("");
+  $("reiter").querySelectorAll("button").forEach((b) => {
+    b.addEventListener("click", () => {
+      ansicht = b.dataset.a;
+      reiter();
+      diagramme();
+    });
+  });
+}
+
+function diagramme() {
+  const punkte = (daten && daten.verlauf && daten.verlauf[ansicht]) || [];
+  const letzter = punkte.length ? punkte[punkte.length - 1] : null;
+  const s = schwellen();
+  const gemittelt = punkte.length > 0 && punkte[0].cmax !== undefined;
+
+  const unter = $("co2-unter");
+  if (ansicht === "nacht" && daten && daten.letzte_nacht) {
+    const nf = daten.nachtfenster;
+    unter.textContent = "Nacht auf den "
+      + new Date(daten.letzte_nacht.nacht + "T12:00:00")
+        .toLocaleDateString("de-AT", { day: "2-digit", month: "long" })
+      + ", " + nf.von + ":00 bis " + nf.bis + ":00 Uhr, Minutentakt.";
+  } else {
+    unter.textContent = gemittelt
+      ? "Gemittelte Werte — die Nacht ist hinterlegt." : "";
+  }
+
+  const kCo2 = [{ name: "CO₂", feld: "c", farbe: "var(--co2)",
+    einheit: "ppm", stellen: 0 }];
+  zeichnen($("bild-co2"), punkte, kCo2, {
+    achseStellen: 0, nachtband: ansicht !== "nacht",
+    marken: [
+      { wert: s.gelb, farbe: "var(--mittel)", text: s.gelb + " ppm" },
+      { wert: s.rot, farbe: "var(--schlecht)", text: s.rot + " ppm" },
+    ],
+    ablesen: ablesung($("ab-co2"), kCo2, letzter),
+  });
+
+  $("co2-erklaerung").innerHTML = "<strong>" + s.gelb
+    + " ppm</strong> ist der Pettenkofer-Wert, seit 1858 die gängige Grenze"
+    + " für einwandfreie Raumluft. Ab rund <strong>" + s.rot
+    + " ppm</strong> gilt sie als verbraucht. Frischluft liegt bei etwa"
+    + " 420 ppm."
+    + (gemittelt ? " In dieser Ansicht ist jeder Punkt ein Mittelwert;"
+      + " einzelne kurze Spitzen können darin untergehen." : "");
+
+  const kTemp = [
+    { name: "Temperatur", feld: "t", farbe: "var(--temp)", einheit: "°C", stellen: 1 },
+    { name: "Taupunkt", feld: "td", farbe: "var(--taupunkt)", einheit: "°C", stellen: 1 },
+  ];
+  zeichnen($("bild-temp"), punkte, kTemp, { achseStellen: 1,
+    nachtband: ansicht !== "nacht",
+    ablesen: ablesung($("ab-temp"), kTemp, letzter) });
+
+  const kRh = [{ name: "relative Feuchte", feld: "rh", farbe: "var(--rh)",
+    einheit: "%", stellen: 0 }];
+  zeichnen($("bild-rh"), punkte, kRh, { achseStellen: 0,
+    nachtband: ansicht !== "nacht",
+    ablesen: ablesung($("ab-rh"), kRh, letzter) });
+
+  const kAh = [{ name: "absolute Feuchte", feld: "ah", farbe: "var(--ah)",
+    einheit: "g/m³", stellen: 1 }];
+  zeichnen($("bild-ah"), punkte, kAh, { achseStellen: 1,
+    nachtband: ansicht !== "nacht",
+    ablesen: ablesung($("ab-ah"), kAh, letzter) });
+}
+
+function naechteTabelle() {
+  const reihe = ((daten && daten.naechte) || []).slice().reverse();
+  const s = schwellen();
+  if (reihe.length === 0) {
+    $("naechte").innerHTML = '<tbody><tr><td>Noch keine vollständige Nacht.</td></tr></tbody>';
+    return;
+  }
+  const groesster = Math.max(...reihe.map((n) => n.anstieg), 1);
+
+  let html = "<thead><tr><th>Nacht auf</th><th>Anstieg</th>"
+    + '<th class="balkenfeld"></th><th>Spitze</th><th>über ' + s.gelb
+    + "</th><th>Ø Temp.</th><th>Taupunkt max</th></tr></thead><tbody>";
+  for (const n of reihe) {
+    const d = new Date(n.nacht + "T12:00:00");
+    const st = stufe(n.co2_max);
+    html += "<tr><td>"
+      + d.toLocaleDateString("de-AT", { weekday: "short", day: "2-digit", month: "2-digit" })
+      + "</td><td>+" + zahl(n.anstieg, 0) + "</td>"
+      + '<td class="balkenfeld"><span class="bahn"><i style="width:'
+      + (100 * n.anstieg / groesster).toFixed(1) + "%;background:" + st.farbe
+      + '"></i></span></td>'
+      + '<td style="color:' + st.farbe + '">' + zahl(n.co2_max, 0) + "</td>"
+      + "<td>" + dauer(n.min_ueber_gelb) + "</td>"
+      + "<td>" + zahl(n.t_mittel, 1) + "</td>"
+      + "<td>" + zahl(n.td_max, 1) + "</td></tr>";
+  }
+  $("naechte").innerHTML = html + "</tbody>";
+}
+
+function archiv() {
+  const tage = ((daten && daten.tage) || []).slice().reverse().slice(0, 21);
+  $("archiv").innerHTML = tage.length === 0
+    ? '<span class="leise">noch leer</span>'
+    : tage.map((t) => '<a href="tage/' + t + '.csv" download>' + t + "</a>").join("");
+}
+
+function allesZeichnen() {
+  kopf(); meldung(); kacheln(); reiter(); diagramme();
+  naechteTabelle(); archiv();
+}
+
+async function laden() {
+  try {
+    const antwort = await fetch("dashboard.json?z=" + Date.now(), { cache: "no-store" });
+    if (!antwort.ok) throw new Error("HTTP " + antwort.status);
+    daten = await antwort.json();
+  } catch (fehler) {
+    daten = null;
+    $("meldung").innerHTML = '<span class="ampel" style="background:var(--schlecht)">'
+      + "</span><span>dashboard.json ist nicht erreichbar (" + fehler.message
+      + ").</span>";
+    $("meldung").style.borderLeftColor = "var(--schlecht)";
+  }
+  allesZeichnen();
+}
+
+let umbau = null;
+window.addEventListener("resize", () => {
+  clearTimeout(umbau);
+  umbau = setTimeout(diagramme, 150);
+});
+
+laden();
+setInterval(laden, 300000);   // alle fünf Minuten nachsehen
+</script>
+</body>
+</html>
