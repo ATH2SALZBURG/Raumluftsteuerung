@@ -276,6 +276,10 @@ const ANSICHTEN = [
 let daten = null;
 let ansicht = "nacht";
 
+// Hat der Betrachter selbst eine Ansicht gewaehlt? Dann wird sie beim
+// Nachladen alle fuenf Minuten nicht wieder umgestellt.
+let ansichtGewaehlt = false;
+
 // ---------------------------------------------------------------- Diagramm --
 
 // kurven: [{name, feld, farbe, einheit, stellen}]
@@ -548,6 +552,7 @@ function reiter() {
   $("reiter").querySelectorAll("button").forEach((b) => {
     b.addEventListener("click", () => {
       ansicht = b.dataset.a;
+      ansichtGewaehlt = true;
       reiter();
       diagramme();
     });
@@ -649,6 +654,15 @@ function archiv() {
 }
 
 function allesZeichnen() {
+  // Solange noch keine Nacht vollstaendig aufgezeichnet ist, waere die
+  // Standardansicht leer -- am ersten Tag also die ganze Seite. Dann lieber
+  // die letzten 24 Stunden zeigen. Eine selbst gewaehlte Ansicht bleibt.
+  if (!ansichtGewaehlt && ansicht === "nacht") {
+    const nacht = daten && daten.verlauf && daten.verlauf.nacht;
+    if (!nacht || nacht.length < 2) {
+      ansicht = "tag";
+    }
+  }
   kopf(); meldung(); kacheln(); reiter(); diagramme();
   naechteTabelle(); archiv();
 }
