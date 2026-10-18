@@ -597,8 +597,10 @@ function ablesung(ziel, kurven, standard) {
 
 function kopf() {
   const s = daten && daten.summe;
+  const anzahl = (s && s.tage) || 0;
   $("kopf").textContent = !daten ? "Daten nicht erreichbar."
-    : "Stand " + daten.erzeugt + " · " + (s.tage || 0) + " Tage"
+    : "Stand " + daten.erzeugt + " · " + anzahl
+      + (anzahl === 1 ? " Tag" : " Tage")
       + (s.erster_tag ? " seit " + s.erster_tag : "");
 }
 
