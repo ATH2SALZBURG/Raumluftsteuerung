@@ -5,7 +5,7 @@
 
 Am letzten Oktobersonntag springt die Uhr um 03:00 MESZ auf 02:00 MEZ
 zurueck. Die Ortszeiten 02:00:00 bis 02:59:59 kommen dann ZWEIMAL vor, mit
-verschiedenen Messwerten.
+verschiedenen Messwerten. Dieser Tag hat 25 Stunden.
 
 Dieser Fall hat schon einmal zugeschlagen: Solange die Zeitstempel ohne
 Zeitzonenversatz geschrieben wurden, hat die zweite Stunde die erste
@@ -39,7 +39,7 @@ def pruefe(bedingung, text):
 
 
 def zeilen_der_umstellungsnacht():
-    """Die Nacht 24./25.10.2026, so wie das Geraet sie schreiben wuerde."""
+    """Der Zeitraum um die Umstellung, wie das Geraet ihn schreiben wuerde."""
     zeilen = []
     co2 = [600]
 
@@ -105,16 +105,17 @@ def main():
         pruefe(bool(mesz) and bool(mez) and max(mesz) < min(mez),
                "Reihenfolge stimmt: Sommerzeitstunde vor Winterzeitstunde")
 
-        naechte = json.loads(
-            (spielwiese / "naechte.json").read_text(encoding="utf-8"))
-        nacht = naechte.get("2026-10-25")
-        pruefe(nacht is not None, "die Nacht auf den 25.10. ist ausgewertet")
-        if nacht:
-            pruefe(nacht["minuten"] == 600,
-                   "die Nacht zaehlt 600 Minuten statt der ueblichen 540 "
-                   "(sind %d)" % nacht["minuten"])
-            pruefe(nacht["co2_anfang"] < nacht["co2_max"],
-                   "Anfangswert stammt vom Nachtbeginn, nicht aus der Mitte")
+        tageswerte = json.loads(
+            (spielwiese / "tage.json").read_text(encoding="utf-8"))
+        tag = tageswerte.get("2026-10-25")
+        pruefe(tag is not None, "der 25.10. ist ausgewertet")
+        if tag:
+            # 00:00-01:59 (120) + zweimal 02:00-02:59 (120) + 03:00-06:59 (240)
+            pruefe(tag["minuten"] == 480,
+                   "der 25.10. zaehlt 480 Minuten, die doppelte Stunde "
+                   "eingerechnet (sind %d)" % tag["minuten"])
+            pruefe(tag["co2_min"] < tag["co2_max"],
+                   "Minimum und Maximum des Tages sind verschieden")
 
     print()
     if fehler:
