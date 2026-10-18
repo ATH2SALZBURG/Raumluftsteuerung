@@ -7,9 +7,9 @@
 Legt Rohpakete unter roh/ ab, genau im Format des Geraets.
 
 Die Werte entstehen aus einer MISCHUNGSBILANZ, nicht aus einer passend
-hingebogenen Kurve: Zwei schlafende Menschen geben CO2 und Wasserdampf in
-einen Raum bekannter Groesse ab, der Luftwechsel traegt beides wieder
-hinaus.
+hingebogenen Kurve: Zwei Menschen geben CO2 und Wasserdampf in einen Raum
+bekannter Groesse ab, solange sie da sind, und der Luftwechsel traegt
+beides wieder hinaus.
 
     dC/dt = G / V * 1e6  -  n * (C - C_aussen)
 
@@ -55,7 +55,7 @@ ROH = WURZEL / "roh"
 VOLUMEN_M3 = 35.0            # 3,5 x 4,0 x 2,5 m
 PERSONEN = 2
 CO2_JE_PERSON_M3_H = 0.015   # ruhender Erwachsener
-WASSER_JE_PERSON_G_H = 30.0  # schlafender Erwachsener
+WASSER_JE_PERSON_G_H = 30.0  # ruhender Erwachsener
 
 LUFTWECHSEL_ZU = 0.45        # Fenster zu, je Stunde
 LUFTWECHSEL_OFFEN = 5.0      # Fenster offen
@@ -64,12 +64,15 @@ CO2_AUSSEN_PPM = 420.0
 AH_AUSSEN_G_M3 = 6.5         # Oktober, gemaessigt
 
 # --- Tagesablauf -------------------------------------------------------------
-SCHLAF_VON = 22
-SCHLAF_BIS = 7
+#
+# Der Raum ist abends und ueber Nacht belegt, tagsueber leer. Das ergibt
+# einen Tagesgang, an dem sich die Auswertung pruefen laesst.
+ANWESEND_VON = 17
+ANWESEND_BIS = 8
 # (Stunde, Minute, Dauer in Minuten)
-LUEFTEN = [(7, 5, 20), (13, 0, 10), (21, 40, 15)]
+LUEFTEN = [(8, 5, 20), (13, 0, 10), (20, 30, 15)]
 
-NAECHTE = 4
+TAGE_ANZAHL = 4
 TAKT_MIN = 1
 
 # Ein paar gestoerte Minuten einstreuen, damit auch die Fehlerpfade der
@@ -84,17 +87,15 @@ def relative_feuchte(ah_g_m3, temperatur_c):
     return dampfdruck / saettigungsdampfdruck(temperatur_c) * 100.0
 
 
-def luftwechsel_der_nacht(zeit):
-    """Jede Nacht ein etwas anderer Luftwechsel.
+def luftwechsel_des_tages(zeit):
+    """Jeder Tag ein etwas anderer Luftwechsel.
 
     In Wirklichkeit ist der nie zweimal gleich -- Tuer angelehnt, Fenster
-    gekippt, Wind. Ohne diese Streuung saehen alle Naechte identisch aus
-    und die Vergleichsansicht liesse sich nicht beurteilen.
+    gekippt, Wind. Ohne diese Streuung saehen alle Tage identisch aus und
+    die Vergleichsansicht liesse sich nicht beurteilen.
     """
-    # Der Schluessel ist die Nacht, nicht der Kalendertag: Um Mitternacht
-    # darf der Luftwechsel nicht springen.
-    schluessel = (zeit + timedelta(hours=24 - SCHLAF_VON)).toordinal()
-    return LUFTWECHSEL_ZU * random.Random(4101 + schluessel).uniform(0.6, 1.5)
+    return LUFTWECHSEL_ZU * random.Random(
+        4101 + zeit.toordinal()).uniform(0.6, 1.5)
 
 
 def fenster_offen(zeit):
@@ -106,7 +107,7 @@ def fenster_offen(zeit):
 
 
 def belegt(zeit):
-    return zeit.hour >= SCHLAF_VON or zeit.hour < SCHLAF_BIS
+    return zeit.hour >= ANWESEND_VON or zeit.hour < ANWESEND_BIS
 
 
 def erzeugen():
@@ -114,7 +115,7 @@ def erzeugen():
     ROH.mkdir(parents=True, exist_ok=True)
 
     ende = datetime.now(timezone.utc).replace(second=0, microsecond=0)
-    zeit_utc = (ende - timedelta(days=NAECHTE)).replace(minute=0)
+    zeit_utc = (ende - timedelta(days=TAGE_ANZAHL)).replace(minute=0)
 
     co2 = CO2_AUSSEN_PPM + 90.0
     ah = AH_AUSSEN_G_M3 + 1.2
@@ -126,7 +127,7 @@ def erzeugen():
         zeit = zeit_utc.astimezone(ZONE)
 
         offen = fenster_offen(zeit)
-        n = LUFTWECHSEL_OFFEN if offen else luftwechsel_der_nacht(zeit)
+        n = LUFTWECHSEL_OFFEN if offen else luftwechsel_des_tages(zeit)
         leute = PERSONEN if belegt(zeit) else 0
 
         # Mischungsbilanz, Schritt fuer Schritt (Euler, 1 Minute)
