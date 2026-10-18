@@ -1,0 +1,12 @@
+# dashboard.json entsteht bei jedem Lauf neu. Eingecheckt waere sie mit 96
+# Fassungen am Tag der groesste Posten der Versionsgeschichte -- und zwar
+# einer, der sich jederzeit aus tage/ neu erzeugen laesst.
+dashboard.json
+
+__pycache__/
+*.pyc
+
+# Sicherheitsnetz: Eine Geraetekonfiguration hat hier nie etwas zu suchen,
+# dort stehen WLAN-Passwort und GitHub-Token.
+config.h
+*.token
